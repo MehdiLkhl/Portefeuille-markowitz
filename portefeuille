@@ -1,0 +1,115 @@
+import yfinance as yf
+
+data = yf.download(['AAPL','GLE.PA','MSFT','BRN','^N225','TSLA','^GSPC','BYG.F','VOW3.DE'],period='10y')
+closeData = data.Close
+closeData
+
+import matplotlib.pyplot as plt
+
+for name in closeData.columns:
+    closeData [name].plot()
+    plt.grid()
+    plt.title(name)
+    plt.show()
+    
+dCloseData=closeData.pct_change()
+dCloseData
+
+for name in dCloseData.columns:
+    dCloseData [name].plot()
+    plt.grid()
+    plt.title(name)
+    plt.show()
+    
+dohMean=dCloseData.mean()
+dohMean
+
+cov=dCloseData.cov()
+cov
+
+import numpy as np
+
+cnt=len(dCloseData.columns)
+
+def randportf():
+    res=np.exp(np.random.randn(cnt))
+    res=res/res.sum()
+    return res
+r=randportf()
+print(r)
+print(r.sum())
+
+def dohportf(r):
+    return np.matmul(dohMean.values,r)
+r=randportf()
+print(r)
+d=dohportf(r)
+print(d)
+
+def riskportf(r):
+    return np.sqrt(np.matmul(np.matmul(r,cov.values),r))
+r=randportf()
+print(r)
+rs = riskportf(r)
+print(rs)
+
+N=9000
+risk = np.zeros(N)
+doh = np.zeros(N)
+portf = np.zeros((N,cnt))
+
+for n in range(N):
+    r = randportf()
+
+    portf[n,:] = r
+    risk[n] = riskportf(r)
+    doh[n] = dohportf(r)
+
+plt.figure(figsize=(10,8))
+
+plt.scatter(risk*100,doh*100,c='y',marker='.')
+plt.xlabel(', %')
+plt.ylabel(', %')
+plt.title(" ")
+
+min_risk = np.argmin(risk)
+plt.scatter([(risk[min_risk])*100],[(doh[min_risk])*100],c='r',marker='*',label=' ')
+
+maxSharpKoef = np.argmax(doh/risk)
+plt.scatter([risk[maxSharpKoef]*100],[doh[maxSharpKoef]*100],c='g',marker='o',label=' - ')
+
+r_mean = np.ones(cnt)/cnt
+risk_mean = riskportf(r_mean)
+doh_mean = dohportf(r_mean)
+plt.scatter([risk_mean*100],[doh_mean*100],c='b',marker='x',label=' ')
+
+plt.legend()
+
+plt.show()
+
+import pandas as pd
+
+print('----------   ----------')
+print()
+print(" = %1.2f%%" % (float(risk[min_risk])*100.))
+print(" = %1.2f%%" % (float(doh[min_risk])*100.)) 
+print()
+print(pd.DataFrame([portf[min_risk]*100],columns=dCloseData.columns,index=[', %']).T)
+print()
+
+print('----------    ----------')
+print()
+print(" = %1.2f%%" % (float(risk[maxSharpKoef])*100.))
+print(" = %1.2f%%" % (float(doh[maxSharpKoef])*100.)) 
+print()
+print(pd.DataFrame([portf[maxSharpKoef]*100],columns=dCloseData.columns,index=[', %']).T)
+print()
+
+print('----------   ----------')
+print()
+print(" = %1.2f%%" % (float(risk_mean)*100.)) 
+print(" = %1.2f%%" % (float(doh_mean)*100.)) 
+print()
+print(pd.DataFrame([r_mean*100],columns=dCloseData.columns,index=[', %']).T)
+print()
+
